@@ -1,0 +1,40 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'twil_api
+
+  Sample SAM Template for twil_api
+
+  '
+Globals:
+  Function:
+    Timeout: 6
+Resources:
+  TWILFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://twil-cloudformation/5693ec8f73848df16b249eef9fb72677
+      Handler: app.lambda_handler
+      Runtime: ruby2.5
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /twil
+            Method: get
+Outputs:
+  TWILApi:
+    Description: API Gateway endpoint URL for Prod stage for TWIL function
+    Value:
+      Fn::Sub: https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/twil/
+  TWILFunction:
+    Description: TWIL Lambda Function ARN
+    Value:
+      Fn::GetAtt:
+      - TWILFunction
+      - Arn
+  TWILFunctionIamRole:
+    Description: Implicit IAM Role created for TWIL function
+    Value:
+      Fn::GetAtt:
+      - TWILFunctionRole
+      - Arn
