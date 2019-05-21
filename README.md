@@ -1,12 +1,22 @@
 # twil_api
 
+## Background
+
+This project is the result of a hallway conversation with the folks at CivicLex about extracting calendar data for use with their weekly newsletter. 
+
+Here, we are making a request to the calendar API at [LFUCG](https://www.lexingtonky.gov/calendar/events). AFAIK, we can't use this data directly in a in-browser JavaScript app because of CORS headers that we can't control - we get an opaque response. So, instead this app makes the request, manipulates data and returns the most basic, vanilla HTML rendering. 
+
+This runs simply on AWS Lambda and uses [SAM](https://aws.amazon.com/serverless/sam/) to test locally, build, and deploy. 
+
+## Structure
+
 This is a sample template for twil_api - Below is a brief explanation of what we have generated for you:
 
 ```bash
 .
 ├── README.md                   <-- This instructions file
 ├── event.json                  <-- API Gateway Proxy Integration event payload
-├── hello_world                 <-- Source code for a lambda function
+├── twil_base                 <-- Source code for a lambda function
 │   ├── app.rb                  <-- Lambda function code
 │   ├── Gemfile                 <-- Ruby function dependencies
 ├── template.yaml               <-- SAM template
@@ -45,10 +55,10 @@ If the previous command ran successfully you should now be able to hit the follo
 ```yaml
 ...
 Events:
-    HelloWorld:
+    TWIL:
         Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
         Properties:
-            Path: /hello
+            Path: /twil
             Method: get
 ```
 
@@ -58,25 +68,27 @@ AWS Lambda Ruby runtime requires a flat folder with all dependencies including t
 
 ```yaml
 ...
-    HelloWorldFunction:
+    TWILFunction:
         Type: AWS::Serverless::Function
         Properties:
-            CodeUri: hello_world/
+            CodeUri: twil_base/
             ...
 ```
 
 Firstly, we need a `S3 bucket` where we can upload our Lambda functions packaged as ZIP before we deploy anything - If you don't have a S3 bucket to store code artifacts then this is a good time to create one:
 
 ```bash
-aws s3 mb s3://BUCKET_NAME
+aws s3 mb s3://twil-cloudformation
 ```
 
 Next, run the following command to package our Lambda function to S3:
 
 ```bash
 sam package \
+    --template-file template.yaml \
     --output-template-file packaged.yaml \
-    --s3-bucket REPLACE_THIS_WITH_YOUR_S3_BUCKET_NAME
+    --s3-bucket twil-cloudformation \
+    --profile chaserx
 ```
 
 Next, the following command will create a Cloudformation Stack and deploy your SAM resources.
@@ -85,7 +97,8 @@ Next, the following command will create a Cloudformation Stack and deploy your S
 sam deploy \
     --template-file packaged.yaml \
     --stack-name twil_api \
-    --capabilities CAPABILITY_IAM
+    --capabilities CAPABILITY_IAM \
+    --profile chaserx
 ```
 
 > **See [Serverless Application Model (SAM) HOWTO Guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-quick-start.html) for more details in how to get started.**
@@ -95,7 +108,7 @@ After deployment is complete you can run the following command to retrieve the A
 ```bash
 aws cloudformation describe-stacks \
     --stack-name twil_api \
-    --query 'Stacks[].Outputs[?OutputKey==`HelloWorldApi`]' \
+    --query 'Stacks[].Outputs[?OutputKey==`TWILApi`]' \
     --output table
 ``` 
 
@@ -106,7 +119,7 @@ To simplify troubleshooting, SAM CLI has a command called sam logs. sam logs let
 `NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
 
 ```bash
-sam logs -n HelloWorldFunction --stack-name twil_api --tail
+sam logs -n TWILFunction --stack-name twil_api --tail
 ```
 
 You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
